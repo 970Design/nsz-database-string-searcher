@@ -1,9 +1,8 @@
 <?php
 /**
  * Plugin Name: 970 Design Database String Searcher
- * Plugin URI: https://example.com
  * Description: Search wp_postmeta for a string and export results as CSV
- * Version:     1.0
+ * Version:     1.0.0
  * Author:      970Design
  * Author URI:  https://970design.com/
  * License:     GPLv2 or later
@@ -24,13 +23,16 @@ if (!defined('ABSPATH')) {
 }
 
 class DB_Search_Export {
-    
+
     public function __construct() {
         add_action('admin_menu', array($this, 'add_admin_menu'));
         add_action('admin_post_db_search_export', array($this, 'handle_search'));
         add_action('admin_post_db_download_csv', array($this, 'handle_download'));
+
+	    // Add settings link on plugins page
+	    add_filter('plugin_action_links_' . plugin_basename(__FILE__), array($this, 'add_plugin_action_links'));
     }
-    
+
     public function add_admin_menu() {
         add_management_page(
             'Database Search & Export',
@@ -40,23 +42,23 @@ class DB_Search_Export {
             array($this, 'admin_page')
         );
     }
-    
+
     public function admin_page() {
         // Check if we have search results to display
         $search_string = isset($_GET['search_string']) ? sanitize_text_field($_GET['search_string']) : '';
         $results_count = isset($_GET['results_count']) ? intval($_GET['results_count']) : 0;
         $show_results = isset($_GET['show_results']) && $_GET['show_results'] === '1';
-        
+
         ?>
         <div class="wrap">
             <h1>Database Search & Export</h1>
             <p>Search for a string in post metadata and export results as CSV.</p>
-            
+
             <?php if ($show_results): ?>
                 <div class="notice notice-success is-dismissible">
                     <p><strong>Search completed!</strong></p>
                 </div>
-                
+
                 <div class="card" style="max-width: 800px; margin-bottom: 20px;">
                     <h2>Search Results Statistics</h2>
                     <table class="widefat" style="margin-top: 10px;">
@@ -67,13 +69,13 @@ class DB_Search_Export {
                             </tr>
                             <tr class="alternate">
                                 <td><strong>Results Found:</strong></td>
-                                
+
                                 <?php if ($results_count > 0) : ?>
                                 <td style="color: #2271b1;"><strong style="font-size: 18px;"><?php echo number_format($results_count); ?></strong> records</td>
                                 <?php else: ?>
                                     <td style="color: #d63638;"><span class="dashicons dashicons-warning"></span> No results found for this search term.</td>
                                 <?php endif; ?>
-                                
+
                             </tr>
                             <tr>
                                 <td><strong>Search Date:</strong></td>
@@ -81,13 +83,13 @@ class DB_Search_Export {
                             </tr>
                         </tbody>
                     </table>
-                    
+
                     <?php if ($results_count > 0): ?>
                         <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>" style="margin-top: 20px;">
                             <input type="hidden" name="action" value="db_download_csv">
                             <input type="hidden" name="search_string" value="<?php echo esc_attr($search_string); ?>">
                             <?php wp_nonce_field('db_download_csv_action', 'db_download_csv_nonce'); ?>
-                            
+
                             <button type="submit" class="button button-primary button-hero" style="display: inline-flex; align-items: center; gap: 0.25rem;">
                                 <span class="dashicons dashicons-download" style="margin-top: 3px;"></span>
                                 Download CSV File (<?php echo number_format($results_count); ?> records)
@@ -95,24 +97,24 @@ class DB_Search_Export {
                         </form>
                     <?php endif; ?>
                 </div>
-                
+
                 <hr>
             <?php endif; ?>
-            
+
             <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
                 <input type="hidden" name="action" value="db_search_export">
                 <?php wp_nonce_field('db_search_export_action', 'db_search_export_nonce'); ?>
-                
+
                 <table class="form-table">
                     <tr>
                         <th scope="row">
                             <label for="search_string">Search String</label>
                         </th>
                         <td>
-                            <input type="text" 
-                                   id="search_string" 
-                                   name="search_string" 
-                                   class="regular-text" 
+                            <input type="text"
+                                   id="search_string"
+                                   name="search_string"
+                                   class="regular-text"
                                    placeholder="e.g., sweet basil"
                                    value="<?php echo esc_attr($search_string); ?>"
                                    required>
@@ -120,12 +122,12 @@ class DB_Search_Export {
                         </td>
                     </tr>
                 </table>
-                
+
                 <?php submit_button($show_results ? 'Search Again' : 'Search Database', 'primary', 'submit'); ?>
             </form>
-            
+
             <hr>
-            
+
             <h2>What This Does</h2>
             <p>This tool searches the <code>wp_postmeta</code> table for your specified string in:</p>
             <ul>
@@ -138,31 +140,31 @@ class DB_Search_Export {
         </div>
         <?php
     }
-    
+
     public function handle_search() {
         // Check permissions
         if (!current_user_can('manage_options')) {
             wp_die('Unauthorized access');
         }
-        
+
         // Verify nonce
-        if (!isset($_POST['db_search_export_nonce']) || 
+        if (!isset($_POST['db_search_export_nonce']) ||
             !wp_verify_nonce($_POST['db_search_export_nonce'], 'db_search_export_action')) {
             wp_die('Security check failed');
         }
-        
+
         // Get search string
         $search_string = isset($_POST['search_string']) ? sanitize_text_field($_POST['search_string']) : '';
-        
+
         if (empty($search_string)) {
             wp_die('Please provide a search string');
         }
-        
+
         // Perform the search
         global $wpdb;
-        
+
         $search_term = '%' . $wpdb->esc_like($search_string) . '%';
-        
+
         $query = $wpdb->prepare(
             "SELECT COUNT(*) FROM {$wpdb->postmeta} 
             INNER JOIN {$wpdb->posts} ON {$wpdb->postmeta}.post_id = {$wpdb->posts}.ID
@@ -178,9 +180,9 @@ class DB_Search_Export {
             $search_term,
             $search_term
         );
-        
+
         $results_count = $wpdb->get_var($query);
-        
+
         // Redirect back to the page with results
         $redirect_url = add_query_arg(
             array(
@@ -191,43 +193,43 @@ class DB_Search_Export {
             ),
             admin_url('tools.php')
         );
-        
+
         wp_redirect($redirect_url);
         exit;
     }
-    
+
     public function handle_download() {
         // Check permissions
         if (!current_user_can('manage_options')) {
             wp_die('Unauthorized access');
         }
-        
+
         // Verify nonce
-        if (!isset($_POST['db_download_csv_nonce']) || 
+        if (!isset($_POST['db_download_csv_nonce']) ||
             !wp_verify_nonce($_POST['db_download_csv_nonce'], 'db_download_csv_action')) {
             wp_die('Security check failed');
         }
-        
+
         // Get search string
         $search_string = isset($_POST['search_string']) ? sanitize_text_field($_POST['search_string']) : '';
-        
+
         if (empty($search_string)) {
             wp_die('Please provide a search string');
         }
-        
+
         // Clean output buffer and suppress all output before CSV
         if (ob_get_level()) {
             ob_end_clean();
         }
-        
+
         // Disable error display for clean CSV output
         @ini_set('display_errors', '0');
-        
+
         // Perform the search
         global $wpdb;
-        
+
         $search_term = '%' . $wpdb->esc_like($search_string) . '%';
-        
+
         $query = $wpdb->prepare(
             "SELECT wp_postmeta.* FROM {$wpdb->postmeta} 
             INNER JOIN {$wpdb->posts} ON {$wpdb->postmeta}.post_id = {$wpdb->posts}.ID
@@ -243,30 +245,30 @@ class DB_Search_Export {
             $search_term,
             $search_term
         );
-        
+
         $results = $wpdb->get_results($query, ARRAY_A);
-        
+
         // Generate CSV
         $filename = 'db-search-' . sanitize_file_name($search_string) . '-' . date('Y-m-d-His') . '.csv';
-        
+
         // Set headers before any output
         header('Content-Type: text/csv; charset=utf-8');
         header('Content-Disposition: attachment; filename=' . $filename);
         header('Pragma: no-cache');
         header('Expires: 0');
-        
+
         // Disable time limit for large exports
         @set_time_limit(0);
-        
+
         $output = fopen('php://output', 'w');
-        
+
         // Add BOM for Excel UTF-8 support
         fprintf($output, chr(0xEF).chr(0xBB).chr(0xBF));
-        
+
         if (!empty($results)) {
             // Write header row with exact column names
             fputcsv($output, array('meta_id', 'post_id', 'meta_key', 'meta_value'), ',', '"');
-            
+
             // Write data rows with proper formatting
             foreach ($results as $row) {
                 // Ensure column order matches header
@@ -276,7 +278,7 @@ class DB_Search_Export {
                     $row['meta_key'],
                     $row['meta_value']
                 );
-                
+
                 // fputcsv automatically handles quote escaping (doubles quotes inside quoted fields)
                 fputcsv($output, $csv_row, ',', '"');
             }
@@ -284,10 +286,28 @@ class DB_Search_Export {
             // No results found
             fputcsv($output, array('No results found for: ' . $search_string), ',', '"');
         }
-        
+
         fclose($output);
         exit;
     }
+
+	/**
+	 * Add settings link on plugin page
+	 *
+	 * @param array $links Existing plugin action links
+	 * @return array Modified plugin action links
+	 */
+	public function add_plugin_action_links($links) {
+		$settings_link = sprintf(
+			'<a href="%s">%s</a>',
+			esc_url(admin_url('tools.php?page=db-search-export')),
+			esc_html__('Search', 'nsz-db-string-searcher')
+		);
+
+		array_unshift($links, $settings_link);
+
+		return $links;
+	}
 }
 
 // Initialize the plugin
