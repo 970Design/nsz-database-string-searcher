@@ -14,6 +14,8 @@ The Database String Searcher plugin provides a simple yet powerful tool for sear
 - Detailed search statistics
 - UTF-8 compatible CSV export
 
+![Main search window](/assets/screenshot-1.png?raw=true "Main search window")
+
 ### Use Cases
 - Debug database issues
 - Find specific metadata values
@@ -21,8 +23,8 @@ The Database String Searcher plugin provides a simple yet powerful tool for sear
 - Data migration preparation
 
 ## Requirements
-- WordPress 5.0 or higher
-- PHP 7.2 or higher
+- WordPress 6.0 or higher
+- PHP 7.4 or higher
 
 ## Installation
 

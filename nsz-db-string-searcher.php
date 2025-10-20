@@ -2,7 +2,7 @@
 /**
  * Plugin Name: 970 Design Database String Searcher
  * Description: Search wp_postmeta for a string and export results as CSV
- * Version:     1.1.0
+ * Version:     1.1.1
  * Author:      970Design
  * Author URI:  https://970design.com/
  * License:     GPLv2 or later
