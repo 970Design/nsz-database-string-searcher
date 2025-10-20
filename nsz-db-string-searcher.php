@@ -2,7 +2,7 @@
 /**
  * Plugin Name: 970 Design Database String Searcher
  * Description: Search wp_postmeta for a string and export results as CSV
- * Version:     1.0.2
+ * Version:     1.1.0
  * Author:      970Design
  * Author URI:  https://970design.com/
  * License:     GPLv2 or later
@@ -312,3 +312,16 @@ class DB_Search_Export {
 
 // Initialize the plugin
 new DB_Search_Export();
+
+
+require 'plugin-update-checker/plugin-update-checker.php';
+use YahnisElsts\PluginUpdateChecker\v5\PucFactory;
+
+$myUpdateChecker = PucFactory::buildUpdateChecker(
+        'https://github.com/970Design/nsz-database-string-searcher',
+        __FILE__,
+        'nsz-database-string-searcher'
+);
+
+//Set the branch that contains the stable release.
+$myUpdateChecker->setBranch('main');
